@@ -20,10 +20,29 @@ pygame.display.set_caption("SwingBallGame")
 
 # 游戏主循环
 running = True
+# 是否正在拖拽小球
+dragging = False
+print("程序开始")
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # 鼠标按下，检查是否点击在小球上
+            mouse_x, mouse_y = event.pos
+            # 判断是否在小球上
+            dx = mouse_x - ball_pos[0]
+            dy = mouse_y - ball_pos[1]
+            if dx * dx + dy * dy <= BALL_RADIUS * BALL_RADIUS:
+                dragging = True # 开始拖拽
+        elif event.type == pygame.MOUSEMOTION:
+            if dragging:
+                # 鼠标移动时，更新小球位置
+                ball_pos = event.pos
+        elif event.type == pygame.MOUSEBUTTONUP:
+            print("鼠标松开")
+            dragging = False  # 鼠标松开，停止拖拽
+        
     
     # 窗口背景填充为白色
     screen.fill((255, 255, 255))
