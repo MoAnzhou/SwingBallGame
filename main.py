@@ -34,6 +34,7 @@ pygame.display.set_caption("SwingBallGame")
 running = True
 dragging = False # 是否正在拖拽小球
 released = False # 鼠标是否松开
+hit = False # 是否击中目标
 
 while running:
     for event in pygame.event.get():
@@ -53,6 +54,15 @@ while running:
                 ball_pos = (ROPE_ORIGIN[0], ROPE_ORIGIN[1] + ROPE_LENGTH)
                 dragging = False
                 released = False
+                hit = False
+                target_angle = random.uniform(0, 2 * math.pi)
+                target_center_x = int(ROPE_ORIGIN[0] + ROPE_LENGTH * math.sin(target_angle))
+                target_center_y = int(ROPE_ORIGIN[1] + ROPE_LENGTH * math.cos(target_angle))
+                TARGET_RECT = pygame.Rect(
+                    target_center_x - TARGET_SIZE // 2,
+                    target_center_y - TARGET_SIZE // 2,
+                    TARGET_SIZE, TARGET_SIZE
+                )
 
         elif event.type == pygame.MOUSEMOTION:
             if dragging:
@@ -90,14 +100,26 @@ while running:
             int (ROPE_ORIGIN[1] + ROPE_LENGTH * math.cos(angle))
         )
 
+    if not hit:
+        nearest_x = max(TARGET_RECT.left, min(ball_pos[0], TARGET_RECT.right))
+        nearest_y = max(TARGET_RECT.top, min(ball_pos[1], TARGET_RECT.bottom))
+        dist_to_rect = math.hypot(ball_pos[0] - nearest_x, ball_pos[1] - nearest_y)
+        if dist_to_rect <= BALL_RADIUS:
+            hit = True
+
+    # 绘图
     screen.fill((255, 255, 255))
     pygame.draw.rect(screen, (120, 180, 220), BUTTON_RECT)
     font = pygame.font.SysFont(None, 28)
-    text = font.render("回正", True, (30, 30, 30))
+    text = font.render("action", True, (30, 30, 30))
     screen.blit(text, (BUTTON_RECT.x + 25, BUTTON_RECT.y + 8))
     pygame.draw.line(screen, (0, 0, 0), ROPE_ORIGIN, ball_pos, 2)
     pygame.draw.circle(screen, BALL_COLOR, ball_pos, BALL_RADIUS)
     pygame.draw.rect(screen, TARGET_COLOR, TARGET_RECT)
+    if hit:
+        pygame.draw.rect(screen, (200, 80, 80), TARGET_RECT)
+    else:
+        pygame.draw.rect(screen, TARGET_COLOR, TARGET_RECT)
     pygame.display.flip()
     # Ans:如果写在for内部，那么每处理一个事件就会刷新一次屏幕
 
