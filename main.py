@@ -1,16 +1,29 @@
 # 游戏循环、事件监听、绘图调用
 import pygame
 import math
+import random
 
 # 参数
 BALL_RADIUS = 20
 BALL_COLOR = (250, 100, 100)
-ROPE_ORIGIN = (400, 100) # 绳子挂点（固定）
+ROPE_ORIGIN = (400, 300) # 绳子挂点（固定）
 ball_pos = (ROPE_ORIGIN[0], ROPE_ORIGIN[1] + 200) # 小球初始位置
 ROPE_LENGTH = 200 # 绳子长度
 angle = math.pi / 2 # 初始化角度（弧度制，0表示正下方）
 angle_speed = 0 # 角速度
 GRAVITY = 0.0015 # 重力加速度
+BUTTON_RECT = pygame.Rect(680, 540, 100, 40)
+
+target_angle = random.uniform(0, 2 * math.pi)
+target_center_x = int(ROPE_ORIGIN[0] + ROPE_LENGTH * math.sin(target_angle))
+target_center_y = int(ROPE_ORIGIN[1] + ROPE_LENGTH * math.cos(target_angle))
+TARGET_SIZE = 60
+TARGET_RECT = pygame.Rect(
+    target_center_x - TARGET_SIZE // 2,
+    target_center_y - TARGET_SIZE // 2,
+    TARGET_SIZE, TARGET_SIZE
+)
+TARGET_COLOR = (100, 200, 120)
 
 pygame.init()
 
@@ -26,6 +39,7 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = event.pos # 鼠标按下，检查是否点击在小球上
             dx = mouse_x - ball_pos[0] # 判断是否在小球上
@@ -33,17 +47,35 @@ while running:
             if dx * dx + dy * dy <= BALL_RADIUS * BALL_RADIUS:
                 dragging = True # 开始拖拽
                 released = False
+            elif BUTTON_RECT.collidepoint(mouse_x, mouse_y):
+                angle = math.pi / 2
+                angle_speed = 0
+                ball_pos = (ROPE_ORIGIN[0], ROPE_ORIGIN[1] + ROPE_LENGTH)
+                dragging = False
+                released = False
+
         elif event.type == pygame.MOUSEMOTION:
             if dragging:
-                ball_pos = event.pos # 鼠标移动时，更新小球位置
-                # 计算拖拽时的角度
-                dx = ball_pos[0] - ROPE_ORIGIN[0]
-                dy = ball_pos[1] - ROPE_ORIGIN[1]
+                mouse_x, mouse_y = event.pos
+                dx = mouse_x - ROPE_ORIGIN[0]
+                dy = mouse_y - ROPE_ORIGIN[1]
+                dist = math.hypot(dx, dy)
+                if dist != ROPE_LENGTH:
+                    scale = ROPE_LENGTH / dist
+                    dx *= scale
+                    dy *= scale
+                    ball_pos = (int(ROPE_ORIGIN[0] + dx), int(ROPE_ORIGIN[1] + dy))
+                else:
+                    ball_pos = (mouse_x, mouse_y)
                 angle = math.atan2(dx, dy)
                 angle_speed = 0  # 拖拽时速度清零
+
         elif event.type == pygame.MOUSEBUTTONUP:
-            dragging = False
-            released = True
+            if dragging:
+                dragging = False
+                released = True
+            else:
+                dragging = False
     
     # 没有拖拽时，进行物理模拟
     if released and not dragging:
@@ -59,8 +91,13 @@ while running:
         )
 
     screen.fill((255, 255, 255))
+    pygame.draw.rect(screen, (120, 180, 220), BUTTON_RECT)
+    font = pygame.font.SysFont(None, 28)
+    text = font.render("回正", True, (30, 30, 30))
+    screen.blit(text, (BUTTON_RECT.x + 25, BUTTON_RECT.y + 8))
     pygame.draw.line(screen, (0, 0, 0), ROPE_ORIGIN, ball_pos, 2)
     pygame.draw.circle(screen, BALL_COLOR, ball_pos, BALL_RADIUS)
+    pygame.draw.rect(screen, TARGET_COLOR, TARGET_RECT)
     pygame.display.flip()
     # Ans:如果写在for内部，那么每处理一个事件就会刷新一次屏幕
 
